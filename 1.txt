@@ -1,0 +1,11 @@
+# -*- coding:utf-8 -*-
+python -m nuitka --onefile --standalone --include-module=numpy --include-module=pyqt5 main.py
+python.exe -m nuitka --onefile --enable-plugin=pyqt5 --show-progress --remove-output --quiet --lto=no --assume-yes-for-downloads --output-dir=./output --main=GiaoTranslate.py --windows-icon-from-ico=T3.ico --windows-console-mode=disable --follow-import-to=Ui.py --follow-import-to=qrc_rc.py --follow-import-to=youdao_translation.py --follow-import-to=Ocr.py --follow-import-to=Screenshot.py
+
+
+C:/Program Files/python/python.exe -m nuitka --onefile --show-progress --remove-output --lto=no --assume-yes-for-downloads --output-dir=E:/programmer/python/Translate/GiaoTranslate/output --main=E:/programmer/python/Translate/GiaoTranslate/main.py --windows-icon-from-ico=E:/programmer/python/Translate/GiaoTranslate/T3.ico --plugin-enable=pyqt5
+
+
+python.exe -m nuitka --onefile --enable-plugin=pyqt5 --show-progress --remove-output --quiet --windows-console-mode=disable --lto=no --assume-yes-for-downloads --output-dir=./output --main=GiaoTranslate.py --windows-icon-from-ico=T3.ico --follow-import-to=Ocr.py --follow-import-to=Ui.py --follow-import-to=youdao_translation.py --follow-import-to=qrc_rc.py --follow-import-to=Screenshot.py
+
+
