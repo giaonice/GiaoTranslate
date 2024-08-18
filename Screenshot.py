@@ -21,8 +21,10 @@ class WScreenShot(QWidget):
 
     def __init__(self, parent = None):
         super(WScreenShot, self).__init__(parent)
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.FramelessWindowHint |Qt.WindowStaysOnTopHint)  # Qt.FramelessWindowHint |
+
         self.setStyleSheet('''background-color:black; ''')
+        # self.setStyleSheet("border: 2px solid black; border-radius: 10px;")
         self.setWindowOpacity(0.5)
         self.desktopRect = QDesktopWidget().screenGeometry()
         self.setGeometry(self.desktopRect)
@@ -33,8 +35,6 @@ class WScreenShot(QWidget):
         self.isDrawing = False
         self.startPoint = QPoint()
         self.endPoint = QPoint()
-
-        # self.layoutWidget = QtWidgets.QWidget(self)
 
         self.yes = ToolButton(self.window())
         self.yes.setObjectName("yes")
@@ -71,18 +71,21 @@ class WScreenShot(QWidget):
         # print(1)
         self.setMask(QBitmap(self.blackMask.copy()))
         self.botton_to_right()
+        # self.creenshothide.emit(False)
         self.hide()
 
     def yes_(self):
         # print(2)
+        self.hide()
         screenshot = QApplication.primaryScreen().grabWindow(QApplication.desktop().winId())
         rect = QRect(self.startPoint, self.endPoint)
         outputRegion = screenshot.copy(rect)
         outputRegion.save('img.png', format = 'PNG', quality = 100)
         self.setMask(QBitmap(self.blackMask.copy()))
         self.botton_to_right()
-        self.hide()
         self.creenshothide.emit(True)
+        # self.hide()
+
 
     def botton_to_right(self):
         self.yes.setGeometry(self.x - 50, self.y - 100, 50, 50)

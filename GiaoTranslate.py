@@ -12,12 +12,12 @@ from PyQt5.QtCore import QThread, pyqtSignal, Qt, QCoreApplication
 from pynput import keyboard
 from qfluentwidgets import FluentIcon, Flyout, InfoBarIcon, FlyoutAnimationType, \
     RoundMenu, Action, ToolTipFilter, ToolTipPosition
-# from youdao_translation import Translate
 from Ui import Ui_Form
 from Screenshot import WScreenShot
 from Ocr import Ocr
 from youdao import Translate
 
+# 按照选择的接口进行请求
 class ModeTranslate(object):
     def __init__(self, mode = None):
         self.mode = mode
@@ -25,7 +25,6 @@ class ModeTranslate(object):
     def get_translate_result(self, text, tolang = None):
         print(self.mode, text, tolang)
         if self.mode == 'Baidu':
-
             T = BaiduT()
             if tolang == 'English':
                 tolang = 'en'
@@ -39,19 +38,91 @@ class ModeTranslate(object):
             print(result)
             return result
 
-class MyDiy(Ui_Form, QWidget):
+# 系统托盘
+class Sys_icon(QWidget):
     def __init__(self):
         super().__init__()
-        self.setupUi(self.window())
-
         # 系统窗口和托盘初始化
         self.tray_icon = QSystemTrayIcon(self)  # 初始化系统托盘图标
         self.menu = RoundMenu()  # 创建右键菜单
         self.sys_window_init()
 
+        self.Monitor = Background_Monitor_Thread()
+        self.Monitor.dataProcessed.connect(self.Monitor_translate)
+        self.Monitor.start()
+
+        self.translate_window = Translate_window()
+        self.translate_window.show()
+        self.creenshot = WScreenShot()
+        self.creenshot.creenshothide.connect(lambda: self.creenshothide_())
+
+    # 快捷键检测回调函数
+    def Monitor_translate(self, data):
+        self.translate_window.data.setPlainText(data)
+        self.translate_window.translate_()
+        # 设置窗口在鼠标出显示
+        print(self.translate_window.isHidden())
+        if self.translate_window.isHidden():
+            mouse_position = QCursor.pos()
+            x = mouse_position.x()
+            y = mouse_position.y()
+            self.translate_window.move(x + self.translate_window.change_x_position, y - self.translate_window.change_y_position)
+            self.translate_window.show()
+
+    # 系统图标初始化
+    def sys_window_init(self):
+        # 初始化系统托盘图标
+        self.tray_icon.setIcon(QIcon(":/static/static/T.png"))
+        self.tray_icon.show()
+        # 创建右键菜单
+        self.menu.addAction(Action(FluentIcon.HOME, '主界面', triggered = lambda: self.translate_window.showNormal()))
+        self.menu.addAction(Action(FluentIcon.IMAGE_EXPORT, 'OCR', triggered = lambda: self.creenshot.show()))
+        self.menu.addAction(Action(FluentIcon.SETTING, '设置'))
+        self.menu.addAction(Action(FluentIcon.CLOSE, '退出', triggered = lambda: QCoreApplication.instance().quit()))
+
+        # 设置系统托盘图标的上下文菜单
+        self.tray_icon.setContextMenu(self.menu)
+        self.tray_icon.activated.connect(self.menu_double_click)
+        self.setWindowOpacity(0.8)  # 50% 透明度
+
+    # 双击系统托盘图标
+    def menu_double_click(self, reason):
+        # 检查双击事件
+        if reason == QSystemTrayIcon.DoubleClick:
+            self.translate_window.show()
+
+    def creenshothide_(self):
+        self.translate_window.data.setPlainText('识别中.......')
+        self.translate_window.result.setPlainText('翻译中.......')
+        size = self.translate_window.size()
+        # 屏幕尺寸
+        screen = QApplication.instance().primaryScreen()
+        screen_size = screen.geometry().size()
+
+        # 计算窗口居中的位置
+        self.translate_window.move((screen_size.width() - size.width()) // 2,
+                  (screen_size.height() - size.height()) // 2)
+        self.translate_window.show()
+        try:
+            str_ = Ocr()
+            print(f'|{str_}|')
+            self.translate_window.data.setPlainText(str_)
+            self.translate_window.translate_()
+
+        except:
+            self.translate_window.data.setPlainText('网路错误  or  接口返回数据错误！！！')
+            self.translate_window.data.setPlainText('网路错误  or  接口返回数据错误！！！')
+
+
+# 翻译主界面
+class Translate_window(Ui_Form, QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self.window())
+        self.window_init()
         # 下拉按钮内容初始化
         self.lang_items = ['English', 'Chinese']
-        self.mode_items = ['Baidu', 'Google', 'Deepl', 'Youdao']
+        self.mode_items = ['Baidu', 'Youdao']  # , 'Google', 'Deepl'
         self.ComboBox_init()
 
         # 鼠标聚焦提示初始化
@@ -61,65 +132,21 @@ class MyDiy(Ui_Form, QWidget):
         self.auto_mode.setChecked(True)
         self.change.setEnabled(False)
 
-        self.signTodef()
+        self.signTodef()  # 信号连接槽
 
-        self.Monitor = Background_Monitor_Thread()
-        self.Monitor.dataProcessed.connect(self.Monitor_print)
-        self.Monitor.start()
-        self.translate_thread = None
         self.dialog = None
         self.change_x_position = 50
         self.change_y_position = 20
         self.max_window_w = 500
-        self.win = None
 
     # 系统窗口和托盘初始化
-    def sys_window_init(self):
-        # 初始化系统托盘图标
-        self.tray_icon.setIcon(QIcon(":/static/static/T.png"))
-        self.tray_icon.show()
-        # 创建右键菜单
-
-        self.menu.addAction(Action(FluentIcon.HOME, '主界面', triggered = lambda: self.showNormal()))
-        self.menu.addAction(Action(FluentIcon.IMAGE_EXPORT, 'OCR', triggered = lambda: self.screenshot()))
-        self.menu.addAction(Action(FluentIcon.SETTING, '设置'))
-        self.menu.addAction(Action(FluentIcon.CLOSE, '退出', triggered = lambda: QCoreApplication.instance().quit()))
-
-        # 设置系统托盘图标的上下文菜单
-        self.tray_icon.setContextMenu(self.menu)
-        self.tray_icon.activated.connect(self.menu_double_click)
+    def window_init(self):
         self.setWindowOpacity(0.8)  # 50% 透明度
         # 设置窗体无边框
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setLayout(self.mainLayout)
         self.setWindowIcon(QIcon(":/static/static/T.png"))
         self.setWindowTitle("Giao-Translate")
-
-    def screenshot(self):
-        if not hasattr(self, 'win') or self.win is None:
-            self.win = WScreenShot()
-            self.win.creenshothide.connect(lambda: self.creenshothide_())
-        self.win.show()
-
-    def creenshothide_(self):
-        size = self.size()
-        # 屏幕尺寸
-        screen = QApplication.instance().primaryScreen()
-        screen_size = screen.geometry().size()
-
-        # 计算窗口居中的位置
-        self.move((screen_size.width() - size.width()) // 2,
-                  (screen_size.height() - size.height()) // 2)
-        self.show()
-        try:
-            str_ = Ocr()
-            print(f'|{str_}|')
-            self.data.setPlainText(str_)
-            self.translate_()
-
-        except:
-            self.data.setPlainText('网路错误  or  接口返回数据错误！！！')
-            self.data.setPlainText('网路错误  or  接口返回数据错误！！！')
 
     # 鼠标聚焦提示初始化
     def tooltip_set_init(self):
@@ -150,19 +177,6 @@ class MyDiy(Ui_Form, QWidget):
         self.change2.setCurrentIndex(1)
         self.changemode.addItems(self.mode_items)
         self.changemode.setCurrentIndex(3)
-
-    # 托盘图标被双击
-    def menu_double_click(self, reason):
-        # 检查双击事件
-        if reason == QSystemTrayIcon.DoubleClick:
-            self.show()
-
-    # 托盘选择主界面
-    def menu_home(self):
-        self.showNormal()
-
-    def menu_set(self):
-        pass
 
     # 各个信号与各个槽的链接
     def signTodef(self):
@@ -216,7 +230,8 @@ class MyDiy(Ui_Form, QWidget):
 
     # 关闭按钮点击执行
     def close_window(self):
-        self.hide()
+        print('self.close()')
+        self.close()
         # self.dialog = Dialog("尊嘟假嘟~", "哥哥要让我走吗！！呜呜呜~", self)
         # self.dialog.yesButton.setText("最小化到系统托盘")
         # self.dialog.cancelButton.setText("不要你了！！M3~")
@@ -276,19 +291,6 @@ class MyDiy(Ui_Form, QWidget):
     # 翻译按键回调，显示翻译结果
     def set_data_text(self, data):
         self.result.setPlainText(data['result'].replace('    ', '💨\n'))
-
-    # 快捷键检测回调函数
-    def Monitor_print(self, data):
-        self.data.setPlainText(data)
-        self.translate_()
-        # 设置窗口在鼠标出显示
-        print(self.isHidden())
-        if self.isHidden():
-            mouse_position = QCursor.pos()
-            x = mouse_position.x()
-            y = mouse_position.y()
-            self.move(x + self.change_x_position, y - self.change_y_position)
-            self.show()
 
     #  鼠标窗口可移动，函数重写
     def mousePressEvent(self, event):
@@ -400,6 +402,6 @@ if __name__ == '__main__':
     # QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
     app = QApplication(sys.argv)
-    w = MyDiy()
-    w.show()
+    sys_icon = Sys_icon()
+
     app.exec()
