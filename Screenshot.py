@@ -86,7 +86,6 @@ class WScreenShot(QWidget):
         self.creenshothide.emit(True)
         # self.hide()
 
-
     def botton_to_right(self):
         self.yes.setGeometry(self.x - 50, self.y - 100, 50, 50)
         self.no.setGeometry(self.x - 100, self.y - 100, 50, 50)
@@ -132,9 +131,6 @@ class WScreenShot(QWidget):
             self.reload.setGeometry(self.endPoint.x() - 120, self.endPoint.y(), 40, 40)
             self.reload.showNormal()
             # self.hide()
-
-
-
 
 if __name__ == '__main__':
 

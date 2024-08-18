@@ -113,7 +113,6 @@ class Sys_icon(QWidget):
             self.translate_window.data.setPlainText('网路错误  or  接口返回数据错误！！！')
             self.translate_window.data.setPlainText('网路错误  or  接口返回数据错误！！！')
 
-
 # 翻译主界面
 class Translate_window(Ui_Form, QWidget):
     def __init__(self):
