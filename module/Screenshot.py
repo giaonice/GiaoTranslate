@@ -80,7 +80,7 @@ class WScreenShot(QWidget):
         screenshot = QApplication.primaryScreen().grabWindow(QApplication.desktop().winId())
         rect = QRect(self.startPoint, self.endPoint)
         outputRegion = screenshot.copy(rect)
-        outputRegion.save('img.png', format = 'PNG', quality = 100)
+        outputRegion.save('./static/img.png', format = 'PNG', quality = 100)
         self.setMask(QBitmap(self.blackMask.copy()))
         self.botton_to_right()
         self.creenshothide.emit(True)
