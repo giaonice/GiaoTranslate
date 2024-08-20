@@ -12,10 +12,10 @@ from PyQt5.QtCore import QThread, pyqtSignal, Qt, QCoreApplication
 from pynput import keyboard
 from qfluentwidgets import FluentIcon, Flyout, InfoBarIcon, FlyoutAnimationType, \
     RoundMenu, Action, ToolTipFilter, ToolTipPosition
-from Ui import Ui_Form
-from Screenshot import WScreenShot
-from Ocr import Ocr
-from youdao import Translate
+from module.Ui import Ui_Form
+from module.Screenshot import WScreenShot
+from module.Ocr import Ocr
+from module.youdao import Translate
 
 # 按照选择的接口进行请求
 class ModeTranslate(object):
@@ -55,6 +55,8 @@ class Sys_icon(QWidget):
         self.translate_window.show()
         self.creenshot = WScreenShot()
         self.creenshot.creenshothide.connect(lambda: self.creenshothide_())
+        self.ocr = Ocr()
+        self.ocr.dataProcessed.connect(self.get_ocr_result)
 
     # 快捷键检测回调函数
     def Monitor_translate(self, data):
@@ -92,6 +94,7 @@ class Sys_icon(QWidget):
             self.translate_window.show()
 
     def creenshothide_(self):
+
         self.translate_window.data.setPlainText('识别中.......')
         self.translate_window.result.setPlainText('翻译中.......')
         size = self.translate_window.size()
@@ -103,15 +106,12 @@ class Sys_icon(QWidget):
         self.translate_window.move((screen_size.width() - size.width()) // 2,
                   (screen_size.height() - size.height()) // 2)
         self.translate_window.show()
-        try:
-            str_ = Ocr()
-            print(f'|{str_}|')
-            self.translate_window.data.setPlainText(str_)
-            self.translate_window.translate_()
+        self.ocr.start()
 
-        except:
-            self.translate_window.data.setPlainText('网路错误  or  接口返回数据错误！！！')
-            self.translate_window.data.setPlainText('网路错误  or  接口返回数据错误！！！')
+    def get_ocr_result(self, data):
+        self.translate_window.data.setPlainText(data)
+        self.translate_window.translate_()
+
 
 # 翻译主界面
 class Translate_window(Ui_Form, QWidget):
